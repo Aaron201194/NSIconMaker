@@ -1,4 +1,4 @@
-const API_URL = 'https://your-render-app-url.onrender.com'; // Replace with your actual deployed URL
+const API_URL = 'https://nsiconmaker.onrender.com'; // Replace with your actual deployed URL
 let currentItemKey = '';
 let currentUserVote = null;
 
