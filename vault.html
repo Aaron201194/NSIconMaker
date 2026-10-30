@@ -29,4 +29,215 @@
     .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s, border-color 0.2s; }
     .card:hover { transform: translateY(-2px); border-color: var(--accent); }
     .card img { width: 100px; height: 100px; object-fit: contain; image-rendering: pixelated; background: #111; border-radius: 4px; }
-    .card-title { font-size: 13px; font-weight: bold; margin-top: 8px; color: #ccc; word-break
+    .card-title { font-size: 13px; font-weight: bold; margin-top: 8px; color: #ccc; word-break: break-word; }
+    
+    /* Sidebar */
+    .sidebar { width: 320px; background: var(--panel); border-left: 2px solid var(--border); padding: 20px; overflow-y: auto; flex-shrink: 0; display: none; flex-direction: column; box-sizing: border-box; }
+    .sidebar.open { display: flex; }
+    .close-btn { background: transparent; color: #aaa; border: none; cursor: pointer; text-align: right; font-size: 16px; margin-bottom: 10px; }
+    .close-btn:hover { color: #fff; }
+    
+    .sb-author { font-size: 12px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
+    .sb-name { font-size: 22px; font-weight: bold; color: #fff; margin-bottom: 15px; word-break: break-word; }
+    
+    .sb-images { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .img-row { display: flex; gap: 15px; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
+    .img-row img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; background: #000; border-radius: 4px; }
+    .img-row .btn { font-size: 11px; padding: 6px; }
+    
+    .sb-date { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .sb-desc { font-size: 14px; color: #ccc; line-height: 1.4; margin-bottom: 20px; flex-grow: 1; }
+    
+    #status { color: #aaa; font-size: 14px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>NSIconMaker Vault</h1>
+    <a href="https://aaron201194.github.io/NSIconMaker/NSIconEditor.html" class="nav-btn">← Back to Icon Editor</a>
+  </header>
+
+  <div class="main-container">
+    <div class="gallery-area">
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search packs or descriptions..." oninput="renderGrid()">
+        <input type="text" id="authorFilter" placeholder="Filter by author..." oninput="renderGrid()">
+        <label><input type="checkbox" id="reqBG" onchange="renderGrid()"> Has BG</label>
+        <label><input type="checkbox" id="reqICO" onchange="renderGrid()"> Has ICO</label>
+        <label><input type="checkbox" id="reqL1" onchange="renderGrid()"> Has L1</label>
+        <label><input type="checkbox" id="reqL2" onchange="renderGrid()"> Has L2</label>
+      </div>
+
+      <div id="status">Loading packs from GitHub repository...</div>
+      <div class="grid" id="packGrid"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <button class="close-btn" onclick="closeSidebar()">✖ Close</button>
+      <div class="sb-author" id="sbAuthor"></div>
+      <div class="sb-name" id="sbName"></div>
+      <div class="sb-images" id="sbImages"></div>
+      <div class="sb-date" id="sbDate"></div>
+      <div class="sb-desc" id="sbDesc"></div>
+      <button class="btn" id="sbDownloadAll">Download All Parts</button>
+    </div>
+  </div>
+
+  <script>
+    const REPO = 'Aaron201194/NSIconMaker';
+    const BRANCH = 'main';
+    let allPacks = []; 
+    let selectedPack = null;
+
+    async function loadData() {
+      const statusEl = document.getElementById('status');
+      
+      // Use the Git Trees API to fetch the entire repo file list in 1 single fast request
+      const treeUrl = `https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`;
+      
+      try {
+        const res = await fetch(treeUrl);
+        if (!res.ok) throw new Error("Could not fetch repository tree");
+        const data = await res.json();
+        
+        // Find files inside the "uploads/" folder
+        const uploadFiles = data.tree.filter(f => f.path.startsWith('uploads/') && f.type === 'blob');
+        
+        const packsMap = {};
+
+        uploadFiles.forEach(file => {
+          const pathSegments = file.path.split('/'); // ["uploads", "PackName", "filename.png"]
+          if (pathSegments.length === 3) {
+            const packName = pathSegments[1];
+            const fileName = pathSegments[2];
+            
+            if (!packsMap[packName]) {
+              packsMap[packName] = { name: packName, parts: {}, author: 'Unknown', date: 'N/A', desc: 'No description.', rawXmlUrl: null };
+            }
+
+            const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file.path}`;
+
+            if (fileName.endsWith('.png')) {
+              if (fileName.includes('_BG')) packsMap[packName].parts.BG = { url: rawUrl, name: fileName };
+              else if (fileName.includes('_ICO')) packsMap[packName].parts.ICO = { url: rawUrl, name: fileName };
+              else if (fileName.includes('_L1')) packsMap[packName].parts.L1 = { url: rawUrl, name: fileName };
+              else if (fileName.includes('_L2')) packsMap[packName].parts.L2 = { url: rawUrl, name: fileName };
+            } else if (fileName === 'author.xml') {
+              packsMap[packName].rawXmlUrl = rawUrl;
+            }
+          }
+        });
+
+        // Convert map to array and fetch XML data
+        allPacks = Object.values(packsMap);
+        
+        // Fetch raw author.xml files in parallel
+        await Promise.all(allPacks.map(async (pack) => {
+          if (pack.rawXmlUrl) {
+            try {
+              const xmlRes = await fetch(pack.rawXmlUrl);
+              const xmlText = await xmlRes.text();
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+              
+              pack.author = xmlDoc.getElementsByTagName("author")[0]?.textContent || 'Unknown';
+              pack.date = xmlDoc.getElementsByTagName("dateCreated")[0]?.textContent || 'N/A';
+              pack.desc = xmlDoc.getElementsByTagName("description")[0]?.textContent || 'No description.';
+            } catch (e) { console.error(`Failed parsing XML for ${pack.name}`); }
+          }
+          // Determine Preview Image: ICO if exists, else BG, else L1, else L2
+          pack.previewUrl = (pack.parts.ICO?.url) || (pack.parts.BG?.url) || (pack.parts.L1?.url) || (pack.parts.L2?.url) || '';
+        }));
+
+        statusEl.style.display = 'none';
+        renderGrid();
+
+      } catch (err) {
+        statusEl.innerText = `Error: ${err.message}`;
+      }
+    }
+
+    function renderGrid() {
+      const searchStr = document.getElementById('searchInput').value.toLowerCase();
+      const authorStr = document.getElementById('authorFilter').value.toLowerCase();
+      
+      const reqBG = document.getElementById('reqBG').checked;
+      const reqICO = document.getElementById('reqICO').checked;
+      const reqL1 = document.getElementById('reqL1').checked;
+      const reqL2 = document.getElementById('reqL2').checked;
+
+      const grid = document.getElementById('packGrid');
+      grid.innerHTML = '';
+
+      allPacks.forEach((pack, index) => {
+        // Text Filters (matches pack name or description)
+        if (searchStr && !pack.name.toLowerCase().includes(searchStr) && !pack.desc.toLowerCase().includes(searchStr)) return;
+        if (authorStr && !pack.author.toLowerCase().includes(authorStr)) return;
+
+        // Checkbox Filters
+        if (reqBG && !pack.parts.BG) return;
+        if (reqICO && !pack.parts.ICO) return;
+        if (reqL1 && !pack.parts.L1) return;
+        if (reqL2 && !pack.parts.L2) return;
+
+        // Create Card
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => openSidebar(index);
+        card.innerHTML = `
+          <img src="${pack.previewUrl}" alt="${pack.name}">
+          <div class="card-title">${pack.name}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function openSidebar(index) {
+      selectedPack = allPacks[index];
+      const sb = document.getElementById('sidebar');
+      
+      document.getElementById('sbAuthor').innerText = selectedPack.author;
+      document.getElementById('sbName').innerText = selectedPack.name;
+      document.getElementById('sbDate').innerText = `Created: ${selectedPack.date}`;
+      document.getElementById('sbDesc').innerText = selectedPack.desc;
+      
+      // Render images
+      const imgContainer = document.getElementById('sbImages');
+      imgContainer.innerHTML = '';
+      
+      Object.values(selectedPack.parts).forEach(part => {
+        const row = document.createElement('div');
+        row.className = 'img-row';
+        row.innerHTML = `
+          <img src="${part.url}" alt="pack piece">
+          <a href="${part.url}" download="${part.name}" target="_blank" class="btn" style="text-decoration:none; text-align:center;">Download</a>
+        `;
+        imgContainer.appendChild(row);
+      });
+
+      // Bind Download All
+      document.getElementById('sbDownloadAll').onclick = () => {
+        Object.values(selectedPack.parts).forEach(part => {
+          const a = document.createElement('a');
+          a.href = part.url;
+          a.download = part.name;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+      };
+
+      sb.classList.add('open');
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
