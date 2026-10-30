@@ -4,8 +4,6 @@ let currentUserVote = null;
 
 async function loadReactions(packName) {
   currentItemKey = encodeURIComponent(packName);
-  
-  // Grab the saved vote for this specific pack from localStorage
   currentUserVote = localStorage.getItem('vote_' + currentItemKey) || null;
 
   try {
