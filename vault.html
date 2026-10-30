@@ -1,104 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSIconMaker - Pack Vault</title>
-  <link rel="icon" href="../icon.ico" type="image/x-icon">
-  <style>
-    :root { --bg: #181818; --panel: #242424; --border: #333; --accent: #4c97ff; --text: #eee; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    
-    header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; border-bottom: 2px solid var(--border); background: var(--panel); flex-shrink: 0; }
-    h1 { margin: 0; font-size: 22px; color: var(--accent); }
-    .nav-btn { background: #2a2a2a; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 14px; transition: 0.2s; border: 1px solid var(--border); }
-    .nav-btn:hover { background: #3a3a3a; }
-    .btn { background: var(--accent); color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
-    .btn:hover { background: #3370cc; }
-    
-    .main-container { display: flex; flex-grow: 1; overflow: hidden; }
-    .gallery-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-    
-    /* Featured Section */
-    .featured-section { margin-bottom: 25px; background: linear-gradient(135deg, #222938, #242424); border: 1px solid #3a4b6b; border-radius: 8px; padding: 15px; }
-    .featured-title { font-size: 15px; font-weight: bold; color: #ffab2e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .featured-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 5px; }
-    
-    /* Filters */
-    .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
-    .filters input[type="text"] { padding: 8px; background: #111; border: 1px solid var(--border); color: #fff; border-radius: 4px; flex-grow: 1; min-width: 150px; }
-    .filters label { display: flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; background: #1a1a1a; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); }
-    .filters label:hover { background: #2a2a2a; }
-    
-    /* Grid */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s, border-color 0.2s; }
-    .card:hover { transform: translateY(-2px); border-color: var(--accent); }
-    .card img { width: 100px; height: 100px; object-fit: contain; image-rendering: pixelated; background: #111; border-radius: 4px; }
-    .card-title { font-size: 13px; font-weight: bold; margin-top: 8px; color: #ccc; word-break: break-word; }
-    
-    /* Sidebar */
-    .sidebar { width: 320px; background: var(--panel); border-left: 2px solid var(--border); padding: 20px; overflow-y: auto; flex-shrink: 0; display: none; flex-direction: column; box-sizing: border-box; }
-    .sidebar.open { display: flex; }
-    .close-btn { background: transparent; color: #aaa; border: none; cursor: pointer; text-align: right; font-size: 16px; margin-bottom: 10px; }
-    .close-btn:hover { color: #fff; }
-    
-    .sb-author { font-size: 12px; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-    .sb-name { font-size: 22px; font-weight: bold; color: #fff; margin-bottom: 15px; word-break: break-word; }
-    
-    .sb-images { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-    .img-row { display: flex; gap: 15px; align-items: center; background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
-    .img-row img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; background: #000; border-radius: 4px; }
-    .img-row .btn { font-size: 11px; padding: 6px; }
-    
-    .sb-date { font-size: 12px; color: #888; margin-bottom: 8px; }
-    .sb-desc { font-size: 14px; color: #ccc; line-height: 1.4; margin-bottom: 20px; flex-grow: 1; }
-    
-    #status { color: #aaa; font-size: 14px; margin-bottom: 10px; }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>NSIconMaker Vault</h1>
-    <a href="https://aaron201194.github.io/NSIconMaker/NSIconEditor.html" class="nav-btn">← Back to Icon Editor</a>
-  </header>
-
-  <div class="main-container">
-    <div class="gallery-area">
-      
-      <!-- Featured Daily Packs Section (Strictly 3 packs) -->
-      <div class="featured-section" id="featuredSection" style="display: none;">
-        <div class="featured-title">⭐ Featured Packs of the Day (3)</div>
-        <div class="featured-grid" id="featuredGrid"></div>
-      </div>
-
-      <div class="filters">
-        <input type="text" id="searchInput" placeholder="Search packs or descriptions..." oninput="renderGrid()">
-        <input type="text" id="authorFilter" placeholder="Filter by author..." oninput="renderGrid()">
-        <label><input type="checkbox" id="reqBG" onchange="renderGrid()"> Has BG</label>
-        <label><input type="checkbox" id="reqICO" onchange="renderGrid()"> Has ICO</label>
-        <label><input type="checkbox" id="reqL1" onchange="renderGrid()"> Has L1</label>
-        <label><input type="checkbox" id="reqL2" onchange="renderGrid()"> Has L2</label>
-      </div>
-
-      <div id="status">Loading packs from GitHub repository...</div>
-      <div class="grid" id="packGrid"></div>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-      <button class="close-btn" onclick="closeSidebar()">✖ Close</button>
-      <div class="sb-author" id="sbAuthor"></div>
-      <div class="sb-name" id="sbName"></div>
-      <div class="sb-images" id="sbImages"></div>
-      <div class="sb-date" id="sbDate"></div>
-      <div class="sb-desc" id="sbDesc"></div>
-      <button class="btn" id="sbDownloadAll">Download All Parts</button>
-    </div>
-  </div>
-
-  <script>
+<script>
     const REPO = 'Aaron201194/NSIconMaker';
     const BRANCH = 'main';
     let allPacks = []; 
@@ -127,13 +27,20 @@
             }
 
             const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file.path}`;
+            const upperName = fileName.toUpperCase();
 
             if (fileName.endsWith('.png')) {
-              if (fileName === 'PACK_ICO_PREVIEW.png') packsMap[packName].parts.PREVIEW = { url: rawUrl, name: fileName };
-              else if (fileName.includes('_BG')) packsMap[packName].parts.BG = { url: rawUrl, name: fileName };
-              else if (fileName.includes('_ICO')) packsMap[packName].parts.ICO = { url: rawUrl, name: fileName };
-              else if (fileName.includes('_L1')) packsMap[packName].parts.L1 = { url: rawUrl, name: fileName };
-              else if (fileName.includes('_L2')) packsMap[packName].parts.L2 = { url: rawUrl, name: fileName };
+              if (upperName.includes('PACK_ICO_PREVIEW')) {
+                packsMap[packName].parts.PREVIEW = { url: rawUrl, name: fileName };
+              } else if (upperName.includes('_BG') || upperName.startsWith('BG')) {
+                packsMap[packName].parts.BG = { url: rawUrl, name: fileName };
+              } else if (upperName.includes('_ICO') || upperName.startsWith('ICO')) {
+                packsMap[packName].parts.ICO = { url: rawUrl, name: fileName };
+              } else if (upperName.includes('_L1') || upperName.includes('L1')) {
+                packsMap[packName].parts.L1 = { url: rawUrl, name: fileName };
+              } else if (upperName.includes('_L2') || upperName.includes('L2')) {
+                packsMap[packName].parts.L2 = { url: rawUrl, name: fileName };
+              }
             } else if (fileName === 'author.xml') {
               packsMap[packName].rawXmlUrl = rawUrl;
             }
@@ -155,6 +62,7 @@
               pack.desc = xmlDoc.getElementsByTagName("description")[0]?.textContent || 'No description.';
             } catch (e) { console.error(`Failed parsing XML for ${pack.name}`); }
           }
+          // Priority: PREVIEW -> ICO -> BG -> L1 -> L2
           pack.previewUrl = (pack.parts.PREVIEW?.url) || (pack.parts.ICO?.url) || (pack.parts.BG?.url) || (pack.parts.L1?.url) || (pack.parts.L2?.url) || '';
         }));
 
@@ -183,7 +91,6 @@
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
 
-      // Slice strictly to 3 featured packs
       const featuredPacks = shuffled.slice(0, 3);
       const featuredGrid = document.getElementById('featuredGrid');
       featuredGrid.innerHTML = '';
@@ -280,5 +187,3 @@
 
     loadData();
   </script>
-</body>
-</html>
