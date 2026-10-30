@@ -1,8 +1,8 @@
-# **NSIconMaker**
-
 <div align="center">
 <img src="https://raw.githubusercontent.com/Aaron201194/NSIconMaker/main/Icon.png" alt="NSIMLOGO" width="200">
+# **NSIconMaker**
 </div>
+
 A Profile Icon creator where you can build your own icons and share them in the vault!
 
 Meant to mimic the switch's profile menu for familiarity.
