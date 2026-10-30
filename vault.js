@@ -15,6 +15,29 @@ async function loadReactions(packName) {
   }
 }
 
+function renderTopTenRow(packsArray) {
+    // Sort packs by Yeah count descending and take top 10
+    const topTen = [...packsArray].sort((a, b) => b.yeahs - a.yeahs).slice(0, 10);
+    
+    const scroller = document.getElementById('topTenScroller');
+    scroller.innerHTML = '';
+
+    topTen.forEach((pack, index) => {
+        const rank = index + 1;
+        const card = document.createElement('div');
+        card.className = 'top-ten-card';
+        card.onclick = () => openPackDetails(pack); // Hook into your existing drawer/sidebar function
+
+        card.innerHTML = `
+            <div class="rank-badge">#${rank}</div>
+            <img src="${pack.thumbnail || pack.previewUrl}" alt="${pack.name}">
+            <div class="top-ten-title">${pack.name}</div>
+            <div class="top-ten-yeahs">👍 ${pack.yeahs || 0} Yeahs</div>
+        `;
+        scroller.appendChild(card);
+    });
+}
+
 async function react(type) {
   if (!currentItemKey) return;
 
