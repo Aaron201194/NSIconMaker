@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NSIconMaker - Vault</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #181818;
+      color: #eee;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #2a2a2a;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    h1 { margin: 0; font-size: 24px; color: #4c97ff; }
+    .nav-btn {
+      background: #2a2a2a;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .nav-btn:hover { background: #3a3a3a; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card img {
+      width: 128px;
+      height: 128px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      background: #111;
+      border-radius: 4px;
+      border: 1px solid #1a1a1a;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin: 8px 0 4px 0;
+      word-break: break-word;
+      color: #ccc;
+    }
+    .dl-btn {
+      background: #4c97ff;
+      color: #fff;
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: auto;
+      width: 80%;
+      text-align: center;
+    }
+    .dl-btn:hover { background: #3370cc; }
+    #status { font-size: 14px; color: #888; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>NSIconMaker Vault</h1>
+    <a href="../" class="nav-btn">← Back to Maker App</a>
+  </header>
+
+  <p id="status">Loading layer costumes from repository...</p>
+  <div class="grid" id="vaultGrid"></div>
+
+  <script>
+    const REPO = 'Aaron201194/NSIconMaker';
+    const BRANCH = 'main';
+    const UPLOADS_FOLDER = 'uploads';
+
+    async function loadVault() {
+      const statusEl = document.getElementById('status');
+      const gridEl = document.getElementById('vaultGrid');
+
+      const apiUrl = `https://api.github.com/repos/${REPO}/contents/${UPLOADS_FOLDER}?ref=${BRANCH}`;
+
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          statusEl.innerText = 'No uploaded costumes found in vault yet.';
+          return;
+        }
+
+        const files = await response.json();
+        const pngFiles = files.filter(f => f.name.toLowerCase().endsWith('.png'));
+
+        if (pngFiles.length === 0) {
+          statusEl.innerText = 'Vault folder is empty.';
+          return;
+        }
+
+        statusEl.innerText = `Showing ${pngFiles.length} raw layer costume(s):`;
+        gridEl.innerHTML = '';
+
+        pngFiles.forEach((file) => {
+          const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${UPLOADS_FOLDER}/${encodeURIComponent(file.name)}`;
+          const cleanName = file.name.replace(/\.png$/i, '');
+
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <img src="${rawUrl}" alt="${cleanName}">
+            <div class="card-title">${cleanName}</div>
+            <a href="${rawUrl}" target="_blank" download="${file.name}" class="dl-btn">Download PNG</a>
+          `;
+          gridEl.appendChild(card);
+        });
+      } catch (err) {
+        statusEl.innerText = `Failed to load vault: ${err.message}`;
+      }
+    }
+
+    loadVault();
+  </script>
+</body>
+</html>
