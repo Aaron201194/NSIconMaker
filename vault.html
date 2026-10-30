@@ -281,10 +281,6 @@
     
       // Just call loadReactions here!
       loadReactions(selectedPack.name);
-currentItemKey = 'pack_' + encodeURIComponent(selectedPack.name);
-  let stats = JSON.parse(localStorage.getItem(currentItemKey + '_stats') || '{"yeah": 0, "boo": 0}');
-  let userVote = localStorage.getItem(currentItemKey + '_userVote') || null;
-  updateReactionUI(stats, userVote);
       
       const imgContainer = document.getElementById('sbImages');
       if (imgContainer) {
