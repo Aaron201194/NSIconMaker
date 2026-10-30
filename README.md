@@ -1,7 +1,7 @@
 # **NSIconMaker**
 
 
-![Nintendo Switch Icon Maker](Icon.png)
+![Nintendo Switch Icon Maker](<img src="./Icon.png" alt="Nintendo Switch Icon Maker" width="120">)
 
 A Profile Icon creator where you can build your own icons and share them in the vault!
 
