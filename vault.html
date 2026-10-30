@@ -62,16 +62,15 @@
               pack.desc = xmlDoc.getElementsByTagName("description")[0]?.textContent || 'No description.';
             } catch (e) { console.error(`Failed parsing XML for ${pack.name}`); }
           }
-          // Priority: PREVIEW -> ICO -> BG -> L1 -> L2
           pack.previewUrl = (pack.parts.PREVIEW?.url) || (pack.parts.ICO?.url) || (pack.parts.BG?.url) || (pack.parts.L1?.url) || (pack.parts.L2?.url) || '';
         }));
 
-        statusEl.style.display = 'none';
+        if (statusEl) statusEl.style.display = 'none';
         renderFeatured();
         renderGrid();
 
       } catch (err) {
-        statusEl.innerText = `Error: ${err.message}`;
+        if (statusEl) statusEl.innerText = `Error: ${err.message}`;
       }
     }
 
@@ -93,6 +92,8 @@
 
       const featuredPacks = shuffled.slice(0, 3);
       const featuredGrid = document.getElementById('featuredGrid');
+      if (!featuredGrid) return;
+      
       featuredGrid.innerHTML = '';
       
       featuredPacks.forEach(pack => {
@@ -109,29 +110,38 @@
         featuredGrid.appendChild(card);
       });
 
-      document.getElementById('featuredSection').style.display = 'block';
+      const featuredSec = document.getElementById('featuredSection');
+      if (featuredSec) featuredSec.style.display = 'block';
     }
 
     function renderGrid() {
-      const searchStr = document.getElementById('searchInput').value.toLowerCase();
-      const authorStr = document.getElementById('authorFilter').value.toLowerCase();
+      const searchInput = document.getElementById('searchInput');
+      const authorFilter = document.getElementById('authorFilter');
+      const reqBG = document.getElementById('reqBG');
+      const reqICO = document.getElementById('reqICO');
+      const reqL1 = document.getElementById('reqL1');
+      const reqL2 = document.getElementById('reqL2');
+
+      const searchStr = searchInput ? searchInput.value.toLowerCase() : '';
+      const authorStr = authorFilter ? authorFilter.value.toLowerCase() : '';
       
-      const reqBG = document.getElementById('reqBG').checked;
-      const reqICO = document.getElementById('reqICO').checked;
-      const reqL1 = document.getElementById('reqL1').checked;
-      const reqL2 = document.getElementById('reqL2').checked;
+      const checkBG = reqBG ? reqBG.checked : false;
+      const checkICO = reqICO ? reqICO.checked : false;
+      const checkL1 = reqL1 ? reqL1.checked : false;
+      const checkL2 = reqL2 ? reqL2.checked : false;
 
       const grid = document.getElementById('packGrid');
+      if (!grid) return;
       grid.innerHTML = '';
 
       allPacks.forEach((pack, index) => {
         if (searchStr && !pack.name.toLowerCase().includes(searchStr) && !pack.desc.toLowerCase().includes(searchStr)) return;
         if (authorStr && !pack.author.toLowerCase().includes(authorStr)) return;
 
-        if (reqBG && !pack.parts.BG) return;
-        if (reqICO && !pack.parts.ICO) return;
-        if (reqL1 && !pack.parts.L1) return;
-        if (reqL2 && !pack.parts.L2) return;
+        if (checkBG && !pack.parts.BG) return;
+        if (checkICO && !pack.parts.ICO) return;
+        if (checkL1 && !pack.parts.L1) return;
+        if (checkL2 && !pack.parts.L2) return;
 
         const card = document.createElement('div');
         card.className = 'card';
@@ -148,41 +158,51 @@
       selectedPack = allPacks[index];
       const sb = document.getElementById('sidebar');
       
-      document.getElementById('sbAuthor').innerText = selectedPack.author;
-      document.getElementById('sbName').innerText = selectedPack.name;
-      document.getElementById('sbDate').innerText = `Created: ${selectedPack.date}`;
-      document.getElementById('sbDesc').innerText = selectedPack.desc;
+      const sbAuthor = document.getElementById('sbAuthor');
+      const sbName = document.getElementById('sbName');
+      const sbDate = document.getElementById('sbDate');
+      const sbDesc = document.getElementById('sbDesc');
+
+      if (sbAuthor) sbAuthor.innerText = selectedPack.author;
+      if (sbName) sbName.innerText = selectedPack.name;
+      if (sbDate) sbDate.innerText = `Created: ${selectedPack.date}`;
+      if (sbDesc) sbDesc.innerText = selectedPack.desc;
       
       const imgContainer = document.getElementById('sbImages');
-      imgContainer.innerHTML = '';
-      
-      Object.values(selectedPack.parts).forEach(part => {
-        const row = document.createElement('div');
-        row.className = 'img-row';
-        row.innerHTML = `
-          <img src="${part.url}" alt="pack piece">
-          <a href="${part.url}" download="${part.name}" target="_blank" class="btn" style="text-decoration:none; text-align:center;">Download</a>
-        `;
-        imgContainer.appendChild(row);
-      });
-
-      document.getElementById('sbDownloadAll').onclick = () => {
+      if (imgContainer) {
+        imgContainer.innerHTML = '';
         Object.values(selectedPack.parts).forEach(part => {
-          const a = document.createElement('a');
-          a.href = part.url;
-          a.download = part.name;
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          const row = document.createElement('div');
+          row.className = 'img-row';
+          row.innerHTML = `
+            <img src="${part.url}" alt="pack piece">
+            <a href="${part.url}" download="${part.name}" target="_blank" class="btn" style="text-decoration:none; text-align:center;">Download</a>
+          `;
+          imgContainer.appendChild(row);
         });
-      };
+      }
 
-      sb.classList.add('open');
+      const dlAllBtn = document.getElementById('sbDownloadAll');
+      if (dlAllBtn) {
+        dlAllBtn.onclick = () => {
+          Object.values(selectedPack.parts).forEach(part => {
+            const a = document.createElement('a');
+            a.href = part.url;
+            a.download = part.name;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
+        };
+      }
+
+      if (sb) sb.classList.add('open');
     }
 
     function closeSidebar() {
-      document.getElementById('sidebar').classList.remove('open');
+      const sb = document.getElementById('sidebar');
+      if (sb) sb.classList.remove('open');
     }
 
     loadData();
