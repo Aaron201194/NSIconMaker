@@ -3,239 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSIconMaker - Icon Packs Vault</title>
+  <title>NSIconMaker - Pack Vault</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #181818;
-      color: #eee;
-      margin: 0;
-      padding: 20px;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #2a2a2a;
-      padding-bottom: 12px;
-      margin-bottom: 20px;
-    }
-    h1 { margin: 0; font-size: 24px; color: #4c97ff; }
-    .nav-btn {
-      background: #2a2a2a;
-      color: #fff;
-      text-decoration: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
+    :root { --bg: #181818; --panel: #242424; --border: #333; --accent: #4c97ff; --text: #eee; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; border-bottom: 2px solid var(--border); background: var(--panel); flex-shrink: 0; }
+    h1 { margin: 0; font-size: 22px; color: var(--accent); }
+    .nav-btn { background: #2a2a2a; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 14px; transition: 0.2s; border: 1px solid var(--border); }
     .nav-btn:hover { background: #3a3a3a; }
-    
-    .pack-section {
-      background: #222;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }
-    .pack-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 8px;
-    }
-    .pack-title { font-size: 18px; font-weight: bold; color: #ffab2e; }
-    
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 12px;
-    }
-    .card {
-      background: #1a1a1a;
-      border: 1px solid #2d2d2d;
-      border-radius: 6px;
-      padding: 8px;
-      text-align: center;
-      position: relative;
-      cursor: pointer;
-    }
-    .card.selected {
-      border-color: #4c97ff;
-      background: #1e2838;
-    }
-    .card img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      image-rendering: pixelated;
-      background: #111;
-      border-radius: 4px;
-    }
-    .card-title {
-      font-size: 11px;
-      font-weight: bold;
-      margin: 6px 0;
-      word-break: break-word;
-      color: #ccc;
-    }
-    .checkbox {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      transform: scale(1.2);
-    }
-    
-    .action-bar {
-      position: sticky;
-      bottom: 20px;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      padding: 12px 20px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    }
-    .btn {
-      background: #4c97ff;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
+    .btn { background: var(--accent); color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
     .btn:hover { background: #3370cc; }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>NSIconMaker Vault</h1>
-    <a href="https://aaron201194.github.io/NSIconMaker/NSIconEditor.html" class="nav-btn">← Back to Maker App</a>
-  </header>
-
-  <p id="status">Scanning category packs in repository...</p>
-  <div id="packsContainer"></div>
-
-  <div class="action-bar">
-    <span id="selectedCount">0 items selected</span>
-    <button class="btn" onclick="downloadSelected()">Download Selected Parts</button>
-  </div>
-
-  <script>
-    const REPO = 'Aaron201194/NSIconMaker';
-    const BRANCH = 'main';
-    const PACK_FOLDERS = ['Backgrounds', 'Base_Icons', 'Layer1', 'Layer2'];
     
-    const selectedFiles = new Set();
-
-    async function loadPacks() {
-      const statusEl = document.getElementById('status');
-      const containerEl = document.getElementById('packsContainer');
-      containerEl.innerHTML = '';
-
-      let totalFound = 0;
-
-      for (const pack of PACK_FOLDERS) {
-        const apiUrl = `https://api.github.com/repos/${REPO}/contents/uploads/${pack}?ref=${BRANCH}`;
-
-        try {
-          const response = await fetch(apiUrl);
-          if (!response.ok) continue;
-
-          const files = await response.json();
-          const pngFiles = files.filter(f => f.name.toLowerCase().endsWith('.png'));
-
-          if (pngFiles.length === 0) continue;
-          totalFound += pngFiles.length;
-
-          const packSection = document.createElement('div');
-          packSection.className = 'pack-section';
-
-          const packHeader = document.createElement('div');
-          packHeader.className = 'pack-header';
-          packHeader.innerHTML = `
-            <span class="pack-title">📁 ${pack} Pack (${pngFiles.length})</span>
-            <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="selectAllInPack('${pack}', true)">Select All</button>
-          `;
-          packSection.appendChild(packHeader);
-
-          const grid = document.createElement('div');
-          grid.className = 'grid';
-
-          pngFiles.forEach(file => {
-            const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/uploads/${pack}/${encodeURIComponent(file.name)}`;
-            const cleanName = file.name.replace(/\.png$/i, '');
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.id = `card-${pack}-${file.name}`;
-            card.onclick = (e) => toggleSelect(pack, file.name, rawUrl, card, e);
-
-            card.innerHTML = `
-              <input type="checkbox" class="checkbox" id="check-${pack}-${file.name}" onclick="e.stopPropagation()">
-              <img src="${rawUrl}" alt="${cleanName}">
-              <div class="card-title">${cleanName}</div>
-            `;
-            grid.appendChild(card);
-          });
-
-          packSection.appendChild(grid);
-          containerEl.appendChild(packSection);
-        } catch (err) {
-          console.error(`Failed loading pack ${pack}:`, err);
-        }
-      }
-
-      statusEl.innerText = totalFound > 0 ? 'Select parts below to download individually:' : 'No pack folders found in /uploads/';
-    }
-
-    function toggleSelect(pack, filename, url, cardEl, event) {
-      const key = JSON.stringify({ pack, filename, url });
-      const checkbox = document.getElementById(`check-${pack}-${filename}`);
-
-      if (selectedFiles.has(key)) {
-        selectedFiles.delete(key);
-        cardEl.classList.remove('selected');
-        checkbox.checked = false;
-      } else {
-        selectedFiles.add(key);
-        cardEl.classList.add('selected');
-        checkbox.checked = true;
-      }
-
-      updateCount();
-    }
-
-    function updateCount() {
-      document.getElementById('selectedCount').innerText = `${selectedFiles.size} items selected`;
-    }
-
-    function downloadSelected() {
-      if (selectedFiles.size === 0) {
-        alert('Please select at least one item to download.');
-        return;
-      }
-
-      selectedFiles.forEach(itemJson => {
-        const item = JSON.parse(itemJson);
-        const a = document.createElement('a');
-        a.href = item.url;
-        a.download = `${item.pack}_${item.filename}`;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
-    }
-
-    loadPacks();
-  </script>
-</body>
-</html>
+    .main-container { display: flex; flex-grow: 1; overflow: hidden; }
+    .gallery-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+    
+    /* Filters */
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
+    .filters input[type="text"] { padding: 8px; background: #111; border: 1px solid var(--border); color: #fff; border-radius: 4px; flex-grow: 1; min-width: 150px; }
+    .filters label { display: flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; background: #1a1a1a; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); }
+    .filters label:hover { background: #2a2a2a; }
+    
+    /* Grid */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: transform 0.1s, border-color 0.2s; }
+    .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .card img { width: 100px; height: 100px; object-fit: contain; image-rendering: pixelated; background: #111; border-radius: 4px; }
+    .card-title { font-size: 13px; font-weight: bold; margin-top: 8px; color: #ccc; word-break
