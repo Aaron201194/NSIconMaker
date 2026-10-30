@@ -22,7 +22,14 @@
     /* Featured Section */
     .featured-section { margin-bottom: 25px; background: linear-gradient(135deg, #222938, #242424); border: 1px solid #3a4b6b; border-radius: 8px; padding: 15px; }
     .featured-title { font-size: 15px; font-weight: bold; color: #ffab2e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .featured-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 5px; }
+    .featured-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 5px; 
+    <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+      <div class="featured-title" style="margin-bottom: 8px;">Quick Stats</div>
+      <div id="vault-stats" style="font-size: 13px; color: #aaa; display: flex; gap: 20px;">
+        <span>Total Packs: <strong id="stat-total" style="color: #fff;">0</strong></span>
+        <span>Filtered: <strong id="stat-filtered" style="color: #fff;">0</strong></span>
+      </div>
+    </div>
     
     /* Filters */
     .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
