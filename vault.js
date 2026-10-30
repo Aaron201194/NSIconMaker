@@ -1,43 +1,52 @@
+const API_URL = 'https://your-render-app-url.onrender.com'; // Replace with your actual deployed URL
 let currentItemKey = '';
+let currentUserVote = null;
 
-function react(type) {
+async function loadReactions(packName) {
+  currentItemKey = encodeURIComponent(packName);
+  currentUserVote = localStorage.getItem('vote_' + currentItemKey) || null;
+
+  try {
+    let response = await fetch(`${API_URL}/api/reactions/${currentItemKey}`);
+    let stats = await response.json();
+    updateReactionUI(stats, currentUserVote);
+  } catch (err) {
+    console.error('Failed to load reactions', err);
+  }
+}
+
+async function react(type) {
   if (!currentItemKey) return;
-  
-  // Load current stats and user's current vote from localStorage
-  let stats = JSON.parse(localStorage.getItem(currentItemKey + '_stats') || '{"yeah": 0, "boo": 0}');
-  let userVote = localStorage.getItem(currentItemKey + '_userVote') || null;
-  
-  if (userVote === type) {
-    // Clicking the same button again removes the vote (toggle off)
-    stats[type]--;
-    userVote = null;
-  } else {
-    // If they already had the opposite vote, decrement the old one
-    if (userVote) {
-      stats[userVote]--;
+
+  // Toggle off if clicking the same vote again
+  let newVote = (currentUserVote === type) ? null : type;
+
+  try {
+    let response = await fetch(`${API_URL}/api/reactions/${currentItemKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: newVote, previousVote: currentUserVote })
+    });
+    
+    let stats = await response.json();
+    currentUserVote = newVote;
+    
+    if (currentUserVote) {
+      localStorage.setItem('vote_' + currentItemKey, currentUserVote);
+    } else {
+      localStorage.removeItem('vote_' + currentItemKey);
     }
-    // Apply the new vote
-    stats[type]++;
-    userVote = type;
+
+    updateReactionUI(stats, currentUserVote);
+  } catch (err) {
+    console.error('Failed to submit vote', err);
   }
-  
-  // Save back to localStorage
-  localStorage.setItem(currentItemKey + '_stats', JSON.stringify(stats));
-  if (userVote) {
-    localStorage.setItem(currentItemKey + '_userVote', userVote);
-  } else {
-    localStorage.removeItem(currentItemKey + '_userVote');
-  }
-  
-  // Update UI counts and active button styles
-  updateReactionUI(stats, userVote);
 }
 
 function updateReactionUI(stats, userVote) {
   document.getElementById('yeah-count').innerText = stats.yeah;
   document.getElementById('boo-count').innerText = stats.boo;
   
-  // Optional: Visual styling to show which button is active
   const yeahBtn = document.getElementById('yeah-btn');
   const booBtn = document.getElementById('boo-btn');
   
