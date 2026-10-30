@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NSIconMaker - Vault</title>
+  <title>NSIconMaker - Icon Packs Vault</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -31,111 +31,211 @@
       transition: background 0.2s;
     }
     .nav-btn:hover { background: #3a3a3a; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 16px;
-    }
-    .card {
-      background: #242424;
+    
+    .pack-section {
+      background: #222;
       border: 1px solid #333;
       border-radius: 8px;
-      padding: 10px;
-      text-align: center;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .pack-header {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
       align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 8px;
+    }
+    .pack-title { font-size: 18px; font-weight: bold; color: #ffab2e; }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2d2d2d;
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+    }
+    .card.selected {
+      border-color: #4c97ff;
+      background: #1e2838;
     }
     .card img {
-      width: 128px;
-      height: 128px;
+      width: 100px;
+      height: 100px;
       object-fit: contain;
       image-rendering: pixelated;
       background: #111;
       border-radius: 4px;
-      border: 1px solid #1a1a1a;
     }
     .card-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
-      margin: 8px 0 4px 0;
+      margin: 6px 0;
       word-break: break-word;
       color: #ccc;
     }
-    .dl-btn {
+    .checkbox {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      transform: scale(1.2);
+    }
+    
+    .action-bar {
+      position: sticky;
+      bottom: 20px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .btn {
       background: #4c97ff;
       color: #fff;
-      text-decoration: none;
-      padding: 5px 10px;
+      border: none;
+      padding: 8px 16px;
       border-radius: 4px;
-      font-size: 11px;
+      cursor: pointer;
       font-weight: bold;
-      margin-top: auto;
-      width: 80%;
-      text-align: center;
     }
-    .dl-btn:hover { background: #3370cc; }
-    #status { font-size: 14px; color: #888; }
+    .btn:hover { background: #3370cc; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>NSIconMaker Vault</h1>
-    <a href="https://aaron201194.github.io/NSIconMaker/NSIconEditor.html" class="nav-btn">← Back to Maker App</a>
+    <a href="../" class="nav-btn">← Back to Maker App</a>
   </header>
 
-  <p id="status">Loading layer costumes from repository...</p>
-  <div class="grid" id="vaultGrid"></div>
+  <p id="status">Scanning category packs in repository...</p>
+  <div id="packsContainer"></div>
+
+  <div class="action-bar">
+    <span id="selectedCount">0 items selected</span>
+    <button class="btn" onclick="downloadSelected()">Download Selected Parts</button>
+  </div>
 
   <script>
     const REPO = 'Aaron201194/NSIconMaker';
     const BRANCH = 'main';
-    const UPLOADS_FOLDER = 'uploads';
+    const PACK_FOLDERS = ['Backgrounds', 'Base_Icons', 'Layer1', 'Layer2'];
+    
+    const selectedFiles = new Set();
 
-    async function loadVault() {
+    async function loadPacks() {
       const statusEl = document.getElementById('status');
-      const gridEl = document.getElementById('vaultGrid');
+      const containerEl = document.getElementById('packsContainer');
+      containerEl.innerHTML = '';
 
-      const apiUrl = `https://api.github.com/repos/${REPO}/contents/${UPLOADS_FOLDER}?ref=${BRANCH}`;
+      let totalFound = 0;
 
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          statusEl.innerText = 'No uploaded costumes found in vault yet.';
-          return;
-        }
+      for (const pack of PACK_FOLDERS) {
+        const apiUrl = `https://api.github.com/repos/${REPO}/contents/uploads/${pack}?ref=${BRANCH}`;
 
-        const files = await response.json();
-        const pngFiles = files.filter(f => f.name.toLowerCase().endsWith('.png'));
+        try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) continue;
 
-        if (pngFiles.length === 0) {
-          statusEl.innerText = 'Vault folder is empty.';
-          return;
-        }
+          const files = await response.json();
+          const pngFiles = files.filter(f => f.name.toLowerCase().endsWith('.png'));
 
-        statusEl.innerText = `Showing ${pngFiles.length} raw layer costume(s):`;
-        gridEl.innerHTML = '';
+          if (pngFiles.length === 0) continue;
+          totalFound += pngFiles.length;
 
-        pngFiles.forEach((file) => {
-          const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${UPLOADS_FOLDER}/${encodeURIComponent(file.name)}`;
-          const cleanName = file.name.replace(/\.png$/i, '');
+          const packSection = document.createElement('div');
+          packSection.className = 'pack-section';
 
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <img src="${rawUrl}" alt="${cleanName}">
-            <div class="card-title">${cleanName}</div>
-            <a href="${rawUrl}" target="_blank" download="${file.name}" class="dl-btn">Download PNG</a>
+          const packHeader = document.createElement('div');
+          packHeader.className = 'pack-header';
+          packHeader.innerHTML = `
+            <span class="pack-title">📁 ${pack} Pack (${pngFiles.length})</span>
+            <button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="selectAllInPack('${pack}', true)">Select All</button>
           `;
-          gridEl.appendChild(card);
-        });
-      } catch (err) {
-        statusEl.innerText = `Failed to load vault: ${err.message}`;
+          packSection.appendChild(packHeader);
+
+          const grid = document.createElement('div');
+          grid.className = 'grid';
+
+          pngFiles.forEach(file => {
+            const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/uploads/${pack}/${encodeURIComponent(file.name)}`;
+            const cleanName = file.name.replace(/\.png$/i, '');
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `card-${pack}-${file.name}`;
+            card.onclick = (e) => toggleSelect(pack, file.name, rawUrl, card, e);
+
+            card.innerHTML = `
+              <input type="checkbox" class="checkbox" id="check-${pack}-${file.name}" onclick="e.stopPropagation()">
+              <img src="${rawUrl}" alt="${cleanName}">
+              <div class="card-title">${cleanName}</div>
+            `;
+            grid.appendChild(card);
+          });
+
+          packSection.appendChild(grid);
+          containerEl.appendChild(packSection);
+        } catch (err) {
+          console.error(`Failed loading pack ${pack}:`, err);
+        }
       }
+
+      statusEl.innerText = totalFound > 0 ? 'Select parts below to download individually:' : 'No pack folders found in /uploads/';
     }
 
-    loadVault();
+    function toggleSelect(pack, filename, url, cardEl, event) {
+      const key = JSON.stringify({ pack, filename, url });
+      const checkbox = document.getElementById(`check-${pack}-${filename}`);
+
+      if (selectedFiles.has(key)) {
+        selectedFiles.delete(key);
+        cardEl.classList.remove('selected');
+        checkbox.checked = false;
+      } else {
+        selectedFiles.add(key);
+        cardEl.classList.add('selected');
+        checkbox.checked = true;
+      }
+
+      updateCount();
+    }
+
+    function updateCount() {
+      document.getElementById('selectedCount').innerText = `${selectedFiles.size} items selected`;
+    }
+
+    function downloadSelected() {
+      if (selectedFiles.size === 0) {
+        alert('Please select at least one item to download.');
+        return;
+      }
+
+      selectedFiles.forEach(itemJson => {
+        const item = JSON.parse(itemJson);
+        const a = document.createElement('a');
+        a.href = item.url;
+        a.download = `${item.pack}_${item.filename}`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    }
+
+    loadPacks();
   </script>
 </body>
 </html>
