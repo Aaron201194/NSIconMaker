@@ -24,13 +24,6 @@
     .featured-title { font-size: 15px; font-weight: bold; color: #ffab2e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
     .featured-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 5px;
 
-    <div class="top-ten-section">
-    <div class="top-ten-header">Trending Sets</div>
-    <div id="topTenScroller" class="top-ten-scroller">
-        <!-- Dynamically injected cards will appear here -->
-    </div>
-</div>
-
                     .top-ten-section {
                       margin: 20px 0;
                       padding: 15px;
@@ -148,6 +141,12 @@
         <div class="featured-title">⭐ Featured Packs of the Day!</div>
         <div class="featured-grid" id="featuredGrid"></div>
       </div>
+            <div class="top-ten-section">
+    <div class="top-ten-header">Trending Sets</div>
+    <div id="topTenScroller" class="top-ten-scroller">
+        <!-- Dynamically injected cards will appear here -->
+    </div>
+</div>
 
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search packs or descriptions..." oninput="renderGrid()">
