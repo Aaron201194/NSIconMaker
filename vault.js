@@ -2,6 +2,20 @@ const API_URL = 'https://nsiconmaker.onrender.com'; // Replace with your actual 
 let currentItemKey = '';
 let currentUserVote = null;
 
+// Add this helper function inside your vault.js script to update the stats dynamically
+function updateVaultStats() {
+  const total = packs ? packs.length : 0;
+  const filtered = document.querySelectorAll('.card:not([style*="display: none"])').length;
+  
+  const totalEl = document.getElementById('stat-total');
+  const filteredEl = document.getElementById('stat-filtered');
+  
+  if (totalEl) totalEl.textContent = total;
+  if (filteredEl) filteredEl.textContent = filtered;
+}
+
+// Call updateVaultStats() inside your render/filtering functions where the UI updates.
+
 async function loadReactions(packName) {
   currentItemKey = encodeURIComponent(packName);
   currentUserVote = localStorage.getItem('vote_' + currentItemKey) || null;
