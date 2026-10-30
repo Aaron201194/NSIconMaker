@@ -19,6 +19,11 @@
     .main-container { display: flex; flex-grow: 1; overflow: hidden; }
     .gallery-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
     
+    /* Featured Section */
+    .featured-section { margin-bottom: 25px; background: linear-gradient(135deg, #222938, #242424); border: 1px solid #3a4b6b; border-radius: 8px; padding: 15px; }
+    .featured-title { font-size: 15px; font-weight: bold; color: #ffab2e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .featured-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 5px; }
+    
     /* Filters */
     .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
     .filters input[type="text"] { padding: 8px; background: #111; border: 1px solid var(--border); color: #fff; border-radius: 4px; flex-grow: 1; min-width: 150px; }
@@ -61,6 +66,13 @@
 
   <div class="main-container">
     <div class="gallery-area">
+      
+      <!-- Featured Daily Packs Section (Strictly 3 packs) -->
+      <div class="featured-section" id="featuredSection" style="display: none;">
+        <div class="featured-title">⭐ Featured Packs of the Day (3)</div>
+        <div class="featured-grid" id="featuredGrid"></div>
+      </div>
+
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search packs or descriptions..." oninput="renderGrid()">
         <input type="text" id="authorFilter" placeholder="Filter by author..." oninput="renderGrid()">
@@ -94,8 +106,6 @@
 
     async function loadData() {
       const statusEl = document.getElementById('status');
-      
-      // Use the Git Trees API to fetch the entire repo file list in 1 single fast request
       const treeUrl = `https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`;
       
       try {
@@ -103,13 +113,11 @@
         if (!res.ok) throw new Error("Could not fetch repository tree");
         const data = await res.json();
         
-        // Find files inside the "uploads/" folder
         const uploadFiles = data.tree.filter(f => f.path.startsWith('uploads/') && f.type === 'blob');
-        
         const packsMap = {};
 
         uploadFiles.forEach(file => {
-          const pathSegments = file.path.split('/'); // ["uploads", "PackName", "filename.png"]
+          const pathSegments = file.path.split('/');
           if (pathSegments.length === 3) {
             const packName = pathSegments[1];
             const fileName = pathSegments[2];
@@ -121,7 +129,8 @@
             const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file.path}`;
 
             if (fileName.endsWith('.png')) {
-              if (fileName.includes('_BG')) packsMap[packName].parts.BG = { url: rawUrl, name: fileName };
+              if (fileName === 'PACK_ICO_PREVIEW.png') packsMap[packName].parts.PREVIEW = { url: rawUrl, name: fileName };
+              else if (fileName.includes('_BG')) packsMap[packName].parts.BG = { url: rawUrl, name: fileName };
               else if (fileName.includes('_ICO')) packsMap[packName].parts.ICO = { url: rawUrl, name: fileName };
               else if (fileName.includes('_L1')) packsMap[packName].parts.L1 = { url: rawUrl, name: fileName };
               else if (fileName.includes('_L2')) packsMap[packName].parts.L2 = { url: rawUrl, name: fileName };
@@ -131,10 +140,8 @@
           }
         });
 
-        // Convert map to array and fetch XML data
         allPacks = Object.values(packsMap);
         
-        // Fetch raw author.xml files in parallel
         await Promise.all(allPacks.map(async (pack) => {
           if (pack.rawXmlUrl) {
             try {
@@ -148,16 +155,54 @@
               pack.desc = xmlDoc.getElementsByTagName("description")[0]?.textContent || 'No description.';
             } catch (e) { console.error(`Failed parsing XML for ${pack.name}`); }
           }
-          // Determine Preview Image: ICO if exists, else BG, else L1, else L2
-          pack.previewUrl = (pack.parts.ICO?.url) || (pack.parts.BG?.url) || (pack.parts.L1?.url) || (pack.parts.L2?.url) || '';
+          pack.previewUrl = (pack.parts.PREVIEW?.url) || (pack.parts.ICO?.url) || (pack.parts.BG?.url) || (pack.parts.L1?.url) || (pack.parts.L2?.url) || '';
         }));
 
         statusEl.style.display = 'none';
+        renderFeatured();
         renderGrid();
 
       } catch (err) {
         statusEl.innerText = `Error: ${err.message}`;
       }
+    }
+
+    function renderFeatured() {
+      if (allPacks.length === 0) return;
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      let seed = 0;
+      for (let i = 0; i < todayStr.length; i++) {
+        seed = (seed * 31 + todayStr.charCodeAt(i)) % 1000000000;
+      }
+
+      const shuffled = [...allPacks];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        seed = (seed * 9301 + 49297) % 233280;
+        const j = Math.floor((seed / 233280) * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      // Slice strictly to 3 featured packs
+      const featuredPacks = shuffled.slice(0, 3);
+      const featuredGrid = document.getElementById('featuredGrid');
+      featuredGrid.innerHTML = '';
+      
+      featuredPacks.forEach(pack => {
+        const originalIndex = allPacks.indexOf(pack);
+        
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.minWidth = '110px';
+        card.onclick = () => openSidebar(originalIndex);
+        card.innerHTML = `
+          <img src="${pack.previewUrl}" alt="${pack.name}">
+          <div class="card-title">${pack.name}</div>
+        `;
+        featuredGrid.appendChild(card);
+      });
+
+      document.getElementById('featuredSection').style.display = 'block';
     }
 
     function renderGrid() {
@@ -173,17 +218,14 @@
       grid.innerHTML = '';
 
       allPacks.forEach((pack, index) => {
-        // Text Filters (matches pack name or description)
         if (searchStr && !pack.name.toLowerCase().includes(searchStr) && !pack.desc.toLowerCase().includes(searchStr)) return;
         if (authorStr && !pack.author.toLowerCase().includes(authorStr)) return;
 
-        // Checkbox Filters
         if (reqBG && !pack.parts.BG) return;
         if (reqICO && !pack.parts.ICO) return;
         if (reqL1 && !pack.parts.L1) return;
         if (reqL2 && !pack.parts.L2) return;
 
-        // Create Card
         const card = document.createElement('div');
         card.className = 'card';
         card.onclick = () => openSidebar(index);
@@ -204,7 +246,6 @@
       document.getElementById('sbDate').innerText = `Created: ${selectedPack.date}`;
       document.getElementById('sbDesc').innerText = selectedPack.desc;
       
-      // Render images
       const imgContainer = document.getElementById('sbImages');
       imgContainer.innerHTML = '';
       
@@ -218,7 +259,6 @@
         imgContainer.appendChild(row);
       });
 
-      // Bind Download All
       document.getElementById('sbDownloadAll').onclick = () => {
         Object.values(selectedPack.parts).forEach(part => {
           const a = document.createElement('a');
