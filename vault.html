@@ -32,13 +32,13 @@
             if (fileName.endsWith('.png')) {
               if (upperName.includes('PACK_ICO_PREVIEW')) {
                 packsMap[packName].parts.PREVIEW = { url: rawUrl, name: fileName };
-              } else if (upperName.includes('_BG') || upperName.startsWith('BG')) {
+              } else if (upperName.includes('_BG')) {
                 packsMap[packName].parts.BG = { url: rawUrl, name: fileName };
-              } else if (upperName.includes('_ICO') || upperName.startsWith('ICO')) {
+              } else if (upperName.includes('_ICO')) {
                 packsMap[packName].parts.ICO = { url: rawUrl, name: fileName };
-              } else if (upperName.includes('_L1') || upperName.includes('L1')) {
+              } else if (upperName.includes('_L1')) {
                 packsMap[packName].parts.L1 = { url: rawUrl, name: fileName };
-              } else if (upperName.includes('_L2') || upperName.includes('L2')) {
+              } else if (upperName.includes('_L2')) {
                 packsMap[packName].parts.L2 = { url: rawUrl, name: fileName };
               }
             } else if (fileName === 'author.xml') {
