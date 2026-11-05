@@ -53,37 +53,3 @@ function updateReactionUI(stats, userVote) {
   yeahBtn.style.opacity = userVote === 'yeah' ? '1' : '0.6';
   booBtn.style.opacity = userVote === 'boo' ? '1' : '0.6';
 }
-
-document.getElementById('pack-filter').addEventListener('change', (e) => {
-    // 1. Grab the custom data attributes from the selected <option>
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    const requireStr = selectedOption.dataset.require;
-    const isStrict = selectedOption.dataset.strict === "true";
-    
-    const requiredLayers = requireStr ? requireStr.split(',') : [];
-
-    // 2. Filter your array of packs (assuming it's called packsData)
-    const filteredPacks = packsData.filter(pack => {
-        // If "All Packs" is selected (empty string)
-        if (requiredLayers.length === 0) return true; 
-        
-        // Assuming your pack object has an array of its files/types called 'layers'
-        // e.g., pack.layers = ['prev', 'BG', 'ICO']
-        // Strip out 'prev' so it doesn't interfere with the strict count
-        const coreLayers = pack.layers.filter(layer => layer !== 'prev' && layer !== 'preview');
-
-        // Check if the pack contains EVERY layer required by the filter
-        const hasRequired = requiredLayers.every(req => coreLayers.includes(req));
-
-        if (isStrict) {
-            // Strict match: Must have the required layers AND exactly that many core layers (no extras)
-            return hasRequired && coreLayers.length === requiredLayers.length;
-        }
-
-        // Loose match (Combined filters like Basic/Advanced/Full)
-        return hasRequired;
-    });
-
-    // 3. Re-draw your UI with the filtered list
-    renderPacks(filteredPacks);
-});
