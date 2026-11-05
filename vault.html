@@ -75,14 +75,23 @@
         <div class="featured-grid" id="featuredGrid"></div>
       </div>
 
-      <div class="filters">
-        <input type="text" id="searchInput" placeholder="Search packs or descriptions..." oninput="renderGrid()">
-        <input type="text" id="authorFilter" placeholder="Filter by author..." oninput="renderGrid()">
-        <label><input type="checkbox" id="reqBG" onchange="renderGrid()"> Has BG</label>
-        <label><input type="checkbox" id="reqICO" onchange="renderGrid()"> Has ICO</label>
-        <label><input type="checkbox" id="reqL1" onchange="renderGrid()"> Has L1</label>
-        <label><input type="checkbox" id="reqL2" onchange="renderGrid()"> Has L2</label>
-      </div>
+    <div class="vault-filters">
+      <label for="pack-filter">Filter by Pack Contents:</label>
+      <select id="pack-filter">
+        <option value="all" data-require="" data-strict="false">All Packs</option>
+    
+    <!-- Combined Multi-Layer Filters -->
+        <option value="basic" data-require="BG,ICO" data-strict="false">Basic Icon Packs (BG & ICO)</option>
+        <option value="advanced" data-require="BG,ICO,L1" data-strict="false">Advanced Packs (BG, ICO, L1)</option>
+        <option value="full" data-require="BG,ICO,L1,L2" data-strict="false">Full Packs (BG, ICO, L1, L2)</option>
+    
+    <!-- Strict Single-Layer Filters (Will ignore 'prev' in JS logic) -->
+        <option value="strict-bg" data-require="BG" data-strict="true">Backgrounds Only</option>
+        <option value="strict-ico" data-require="ICO" data-strict="true">Icons Only</option>
+        <option value="strict-l1" data-require="L1" data-strict="true">Layer 1 Only</option>
+        <option value="strict-l2" data-require="L2" data-strict="true">Layer 2 Only</option>
+      </select>
+    </div>
 
       <div id="status">Loading packs from GitHub repository...</div>
       <div class="grid" id="packGrid"></div>
