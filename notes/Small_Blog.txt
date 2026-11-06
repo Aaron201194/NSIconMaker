@@ -1,0 +1,7 @@
+So I just ot this working again
+
+I added a yeah'ed section and fixed the yeah feature
+
+I even made it so each pack should get a unique id and the name will be set differently.
+
+Thanks for readin!
