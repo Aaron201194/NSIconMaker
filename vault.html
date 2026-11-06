@@ -71,6 +71,13 @@
       padding: 13px 0;
       border-top: 1px solid rgba(210,210,210,0.65);
     }
+    .patch-note-title {
+      margin: 0 0 7px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
     .patch-note-content {
       margin: 0;
       color: #fff;
@@ -282,12 +289,24 @@
         const article = document.createElement('article');
         article.className = 'patch-note';
 
-        const body = document.createElement('p');
-        body.className = 'patch-note-content';
-        // Display the .txt contents as plain text, never as executable HTML.
-        body.textContent = content.replace(/\r\n?/g, '\n').trim();
+        // The first line of each .txt file is its displayed title.
+        const lines = content.replace(/\r\n?/g, '\n').split('\n');
+        const titleText = (lines.shift() || '').trim();
+        const noteText = lines.join('\n').trim();
 
-        article.appendChild(body);
+        const heading = document.createElement('h3');
+        heading.className = 'patch-note-title';
+        heading.textContent = titleText || file.path.split('/').pop().replace(/\.txt$/i, '');
+        article.appendChild(heading);
+
+        if (noteText) {
+          const body = document.createElement('p');
+          body.className = 'patch-note-content';
+          // Keep the remaining .txt contents as plain text, preserving line breaks.
+          body.textContent = noteText;
+          article.appendChild(body);
+        }
+
         list.appendChild(article);
       });
     }
