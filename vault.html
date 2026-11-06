@@ -192,7 +192,7 @@
       </div>
 
       <div class="top-yeah-section" id="topYeahSection">
-        <div class="top-yeah-title">Top 10 Most Yeah'ed</div>
+        <div class="top-yeah-title">Top 10 Most Yeah'ed Packs</div>
         <div class="featured-grid" id="topYeahGrid">
           <p class="top-yeah-loading">Loading most yeah'ed packs...</p>
         </div>
@@ -670,7 +670,8 @@
       }
     }
 
-    document.getElementById("uploadDate").value = new Date().toISOString().slice(0, 10);
+    const uploadDateInput = document.getElementById("uploadDate");
+    if (uploadDateInput) uploadDateInput.value = new Date().toISOString().slice(0, 10);
     loadData();
   </script>
 </body>
