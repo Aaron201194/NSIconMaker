@@ -1,7 +1,5 @@
-So I just got this working again
+V2.0.0
 
-I added a yeah'ed section and fixed the yeah feature
+Fixed bug where icons wouldn't render at right aspect ratio
 
-I even made it so each pack should get a unique id and the name will be set differently.
-
-Thanks for readin!
+Improved UI in general
