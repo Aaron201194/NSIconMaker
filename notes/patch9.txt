@@ -1,0 +1,7 @@
+V7
+
+Added Top 10 yeah'ed Icons.
+
+Added Patch Notes section.
+
+Started to redo packs to fit new formatting.
