@@ -24,6 +24,70 @@
     .featured-title { font-size: 15px; font-weight: bold; color: #ffab2e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
     .featured-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 5px; }
     
+
+    /* Patch Notes */
+    .patch-notes-section {
+      margin: 0 0 25px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 10px;
+      background: linear-gradient(to bottom, #0757c9 0%, #563c9e 52%, #c92e45 100%);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      color: #fff;
+    }
+    .patch-notes-title {
+      margin: 0;
+      padding: 0 0 13px;
+      color: #00eaff;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      user-select: none;
+    }
+    .patch-notes-title::-webkit-details-marker { display: none; }
+    .patch-notes-title::after {
+      content: '＋';
+      color: #00eaff;
+      font-size: 22px;
+      line-height: 1;
+    }
+    .patch-notes-section[open] .patch-notes-title::after { content: '−'; }
+    .patch-notes-section:not([open]) .patch-notes-title { padding-bottom: 0; }
+    .patch-notes-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+    .patch-note {
+      padding: 13px 0;
+      border-top: 1px solid rgba(210,210,210,0.65);
+    }
+    .patch-note-content {
+      margin: 0;
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: inherit;
+    }
+    .patch-notes-empty, .patch-notes-loading {
+      margin: 0;
+      padding-top: 12px;
+      border-top: 1px solid rgba(210,210,210,0.65);
+      color: #fff;
+      font-size: 13px;
+    }
+
     /* Filters */
     .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
     .filters input[type="text"] { padding: 8px; background: #111; border: 1px solid var(--border); color: #fff; border-radius: 4px; flex-grow: 1; min-width: 150px; }
@@ -55,6 +119,17 @@
     .sb-desc { font-size: 14px; color: #ccc; line-height: 1.4; margin-bottom: 20px; flex-grow: 1; }
     
     #status { color: #aaa; font-size: 14px; margin-bottom: 10px; }
+
+    .upload-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 0 0 20px; }
+    .upload-panel h2 { margin: 0 0 8px; font-size: 20px; }
+    .upload-panel p { color: #aaa; font-size: 13px; line-height: 1.45; }
+    .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+    .upload-grid label { display: flex; flex-direction: column; gap: 6px; color: #ccc; font-size: 13px; }
+    .upload-grid input, .upload-grid textarea { width: 100%; box-sizing: border-box; background: #111; color: #eee; border: 1px solid var(--border); border-radius: 6px; padding: 9px; }
+    .upload-grid textarea { min-height: 70px; resize: vertical; }
+    .upload-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    #uploadStatus { color: #aaa; font-size: 13px; }
+    .upload-note { margin-top: 10px; }
   </style>
   <script src="vault.js"></script>
 </head>
@@ -68,12 +143,22 @@
 
   <div class="main-container">
     <div class="gallery-area">
+
+
       
       <!-- Featured Daily Packs Section -->
-      <div class="featured-section" id="featuredSection" style="display: none;">
+      <div class="featured-section" id="featuredSection">
         <div class="featured-title">⭐ Random Packs of the Day! ⭐</div>
         <div class="featured-grid" id="featuredGrid"></div>
       </div>
+
+
+      <details class="patch-notes-section" id="patchNotesSection">
+        <summary class="patch-notes-title" id="patchNotesHeading">Patch Notes</summary>
+        <div class="patch-notes-list" id="patchNotesList" aria-live="polite">
+          <p class="patch-notes-loading">Loading patch notes...</p>
+        </div>
+      </details>
 
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search packs or descriptions..." oninput="renderGrid()">
@@ -115,6 +200,52 @@
     let allPacks = []; 
     let selectedPack = null;
 
+    async function loadPatchNotes(treeFiles) {
+      const list = document.getElementById('patchNotesList');
+      if (!list) return;
+
+      list.replaceChildren();
+
+      // Only read .txt files directly inside the repository's root notes/ folder.
+      const noteFiles = treeFiles
+        .filter(file => file.type === 'blob' && /^notes\/[^/]+\.txt$/i.test(file.path))
+        .sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' }));
+
+      if (noteFiles.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'patch-notes-empty';
+        empty.textContent = 'No patch notes have been posted yet.';
+        list.appendChild(empty);
+        return;
+      }
+
+      const results = await Promise.all(noteFiles.map(async file => {
+        const url = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file.path
+          .split('/').map(encodeURIComponent).join('/')}`;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return { file, content: await response.text() };
+        } catch (error) {
+          console.error(`Could not load patch note ${file.path}:`, error);
+          return { file, content: 'This patch note could not be loaded.' };
+        }
+      }));
+
+      results.forEach(({ file, content }) => {
+        const article = document.createElement('article');
+        article.className = 'patch-note';
+
+        const body = document.createElement('p');
+        body.className = 'patch-note-content';
+        // Display the .txt contents as plain text, never as executable HTML.
+        body.textContent = content.replace(/\r\n?/g, '\n').trim();
+
+        article.appendChild(body);
+        list.appendChild(article);
+      });
+    }
+
     async function loadData() {
       const statusEl = document.getElementById('status');
       const treeUrl = `https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`;
@@ -123,6 +254,8 @@
         const res = await fetch(treeUrl);
         if (!res.ok) throw new Error("Could not fetch repository tree");
         const data = await res.json();
+
+        await loadPatchNotes(data.tree || []);
         
         const uploadFiles = data.tree.filter(f => f.path.startsWith('uploads/') && f.type === 'blob');
         const packsMap = {};
@@ -247,7 +380,7 @@
       grid.innerHTML = '';
 
       allPacks.forEach((pack, index) => {
-        if (searchStr && !pack.name.toLowerCase().includes(searchStr) && !pack.desc.toLowerCase().includes(searchStr)) return;
+        if (searchStr && !pack.name.toLowerCase().includes(searchStr) && !pack.folderName.toLowerCase().includes(searchStr) && !pack.desc.toLowerCase().includes(searchStr)) return;
         if (authorStr && !pack.author.toLowerCase().includes(authorStr)) return;
 
         if (checkBG && !pack.parts.BG) return;
@@ -320,6 +453,113 @@
       if (sb) sb.classList.remove('open');
     }
 
+
+    function xmlEscape(value) {
+      return String(value ?? '').replace(/[<>&"']/g, ch => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[ch]));
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadPackToGitHub() {
+      const status = document.getElementById('uploadStatus');
+      const button = document.getElementById('uploadPackButton');
+      const id = document.getElementById('uploadPackId').value.trim();
+      const name = document.getElementById('uploadPackName').value.trim();
+      const author = document.getElementById('uploadAuthor').value.trim();
+      const date = document.getElementById('uploadDate').value || new Date().toISOString().slice(0, 10);
+      const description = document.getElementById('uploadDescription').value.trim();
+      const token = document.getElementById('uploadToken').value.trim();
+
+      // IDs are path segments, so restrict them to safe folder-name characters.
+      if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+        status.textContent = 'Use an ID containing only letters, numbers, hyphens, and underscores.';
+        return;
+      }
+      if (!name || !author || !token) {
+        status.textContent = 'Pack Name, Author, and GitHub token are required.';
+        return;
+      }
+
+      const files = [
+        ['PACK_ICO_PREVIEW.png', document.getElementById('uploadPreview').files[0]],
+        ['PACK_BG.png', document.getElementById('uploadBG').files[0]],
+        ['PACK_ICO.png', document.getElementById('uploadICO').files[0]],
+        ['PACK_L1.png', document.getElementById('uploadL1').files[0]],
+        ['PACK_L2.png', document.getElementById('uploadL2').files[0]]
+      ].filter(([, file]) => file);
+
+      if (!files.length) {
+        status.textContent = 'Choose at least one PNG file to upload.';
+        return;
+      }
+      if (files.some(([, file]) => file.type !== 'image/png')) {
+        status.textContent = 'All image files must be PNGs.';
+        return;
+      }
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<pack>\n  <name>${xmlEscape(name)}</name>\n  <author>${xmlEscape(author)}</author>\n  <dateCreated>${xmlEscape(date)}</dateCreated>\n  <description>${xmlEscape(description)}</description>\n</pack>`;
+      const uploadItems = [...files, ['author.xml', new Blob([xml], { type: 'application/xml' })]];
+      button.disabled = true;
+      status.textContent = 'Uploading files to GitHub...';
+
+      try {
+        for (const [fileName, file] of uploadItems) {
+          const path = `uploads/${id}/${fileName}`;
+          const apiUrl = `https://api.github.com/repos/${REPO}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
+          const existingRes = await fetch(apiUrl, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+          });
+          let sha;
+          if (existingRes.ok) {
+            const existing = await existingRes.json();
+            sha = existing.sha;
+          } else if (existingRes.status !== 404) {
+            const err = await existingRes.json().catch(() => ({}));
+            throw new Error(err.message || `Could not check ${fileName} (${existingRes.status})`);
+          }
+
+          const content = file instanceof Blob && !(file instanceof File)
+            ? btoa(unescape(encodeURIComponent(await file.text())))
+            : await fileToBase64(file);
+          const body = {
+            message: `${sha ? 'Update' : 'Add'} ${fileName} for pack ${id}`,
+            content,
+            branch: BRANCH
+          };
+          if (sha) body.sha = sha;
+
+          const putRes = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/vnd.github+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+          if (!putRes.ok) {
+            const err = await putRes.json().catch(() => ({}));
+            throw new Error(err.message || `GitHub rejected ${fileName} (${putRes.status})`);
+          }
+        }
+        status.textContent = `Uploaded successfully! Pack ID: ${id}. Refreshing the Vault...`;
+        document.getElementById('uploadToken').value = '';
+        await loadData();
+      } catch (error) {
+        status.textContent = `Upload failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("uploadDate").value = new Date().toISOString().slice(0, 10);
     loadData();
   </script>
 </body>
