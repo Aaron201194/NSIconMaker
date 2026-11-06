@@ -88,6 +88,45 @@
       font-size: 13px;
     }
 
+    /* Most Yeah'ed packs */
+    .top-yeah-section {
+      background: rgba(145, 255, 0, 0.13);
+      border: 1px solid rgba(170, 255, 40, 0.38);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+    .top-yeah-title {
+      color: #aaff35;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    }
+    .top-yeah-section .card {
+      background: rgba(115, 190, 0, 0.16);
+      border-color: rgba(170, 255, 40, 0.25);
+    }
+    .top-yeah-section .card:hover {
+      border-color: #aaff35;
+    }
+    .top-yeah-section .card-title {
+      color: #d8ffad;
+    }
+    .top-yeah-count {
+      color: #aaff35;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+    .top-yeah-loading, .top-yeah-empty {
+      color: #d8ffad;
+      font-size: 13px;
+      margin: 0;
+    }
+
     /* Filters */
     .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); align-items: center; }
     .filters input[type="text"] { padding: 8px; background: #111; border: 1px solid var(--border); color: #fff; border-radius: 4px; flex-grow: 1; min-width: 150px; }
@@ -152,6 +191,12 @@
         <div class="featured-grid" id="featuredGrid"></div>
       </div>
 
+      <div class="top-yeah-section" id="topYeahSection">
+        <div class="top-yeah-title">Top 10 Most Yeah'ed Packs</div>
+        <div class="featured-grid" id="topYeahGrid">
+          <p class="top-yeah-loading">Loading most yeah'ed packs...</p>
+        </div>
+      </div>
 
       <details class="patch-notes-section" id="patchNotesSection">
         <summary class="patch-notes-title" id="patchNotesHeading">Patch Notes</summary>
@@ -197,6 +242,7 @@
   <script>
     const REPO = 'Aaron201194/NSIconMaker';
     const BRANCH = 'main';
+    const REACTIONS_API_URL = 'https://nsiconmaker.onrender.com';
     let allPacks = []; 
     let selectedPack = null;
 
@@ -313,6 +359,7 @@
         if (statusEl) statusEl.style.display = 'none';
         renderFeatured();
         renderGrid();
+        renderTopYeahPacks();
 
       } catch (err) {
         if (statusEl) statusEl.innerText = `Error: ${err.message}`;
@@ -357,6 +404,70 @@
 
       const featuredSec = document.getElementById('featuredSection');
       if (featuredSec) featuredSec.style.display = 'block';
+    }
+
+    async function renderTopYeahPacks() {
+      const section = document.getElementById('topYeahSection');
+      const grid = document.getElementById('topYeahGrid');
+      if (!section || !grid) return;
+
+      grid.replaceChildren();
+
+      if (!allPacks.length) {
+        const empty = document.createElement('p');
+        empty.className = 'top-yeah-empty';
+        empty.textContent = 'No packs have been uploaded yet.';
+        grid.appendChild(empty);
+        return;
+      }
+
+      const ranked = await Promise.all(allPacks.map(async pack => {
+        try {
+          const key = encodeURIComponent(pack.folderName);
+          const response = await fetch(`${REACTIONS_API_URL}/api/reactions/${key}`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const stats = await response.json();
+          return { pack, yeah: Math.max(0, Number(stats.yeah) || 0) };
+        } catch (error) {
+          console.error(`Could not load Yeah count for ${pack.folderName}:`, error);
+          return { pack, yeah: 0 };
+        }
+      }));
+
+      ranked.sort((a, b) => b.yeah - a.yeah || a.pack.name.localeCompare(b.pack.name));
+      const topPacks = ranked.slice(0, 10);
+      grid.replaceChildren();
+
+      if (!topPacks.length) {
+        const empty = document.createElement('p');
+        empty.className = 'top-yeah-empty';
+        empty.textContent = 'No reaction data is available yet.';
+        grid.appendChild(empty);
+        return;
+      }
+
+      topPacks.forEach(({ pack, yeah }) => {
+        const index = allPacks.indexOf(pack);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.minWidth = '110px';
+        card.onclick = () => openSidebar(index);
+
+        const image = document.createElement('img');
+        image.src = pack.previewUrl;
+        image.alt = pack.name;
+
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = pack.name;
+
+        const count = document.createElement('div');
+        count.className = 'top-yeah-count';
+        count.textContent = `${yeah} Yeah${yeah === 1 ? '' : 's'}`;
+
+        card.append(image, title, count);
+        grid.appendChild(card);
+      });
     }
 
     function renderGrid() {
