@@ -134,7 +134,7 @@
             const fileName = pathSegments[2];
             
             if (!packsMap[packName]) {
-              packsMap[packName] = { name: packName, parts: {}, author: 'Unknown', date: 'N/A', desc: 'No description.', rawXmlUrl: null };
+              packsMap[packName] = { name: packName, folderName: packName, parts: {}, author: 'Unknown', date: 'N/A', desc: 'No description.', rawXmlUrl: null };
             }
 
             const rawUrl = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file.path}`;
@@ -168,10 +168,11 @@
               const parser = new DOMParser();
               const xmlDoc = parser.parseFromString(xmlText, "text/xml");
               
-              pack.author = xmlDoc.getElementsByTagName("author")[0]?.textContent || 'Unknown';
+              pack.name = xmlDoc.getElementsByTagName("name")[0]?.textContent?.trim() || pack.folderName;
+              pack.author = xmlDoc.getElementsByTagName("author")[0]?.textContent?.trim() || 'Unknown';
               pack.date = xmlDoc.getElementsByTagName("dateCreated")[0]?.textContent || 'N/A';
               pack.desc = xmlDoc.getElementsByTagName("description")[0]?.textContent || 'No description.';
-            } catch (e) { console.error(`Failed parsing XML for ${pack.name}`); }
+            } catch (e) { console.error(`Failed parsing XML for ${pack.folderName}`); }
           }
           pack.previewUrl = (pack.parts.PREVIEW?.url) || (pack.parts.ICO?.url) || (pack.parts.BG?.url) || (pack.parts.L1?.url) || (pack.parts.L2?.url) || '';
         }));
@@ -280,7 +281,7 @@
       if (sbDesc) sbDesc.innerText = selectedPack.desc;
     
       // Just call loadReactions here!
-      loadReactions(selectedPack.name);
+      loadReactions(selectedPack.folderName);
       
       const imgContainer = document.getElementById('sbImages');
       if (imgContainer) {
