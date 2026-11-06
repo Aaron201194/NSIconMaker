@@ -1,5 +1,5 @@
 V2
 
-Fixed bug where icons wouldn't render at right aspect ratio
+Fixed bug where icons wouldn't render at right aspect ratio.
 
-Improved UI in general
+Improved UI in general.
