@@ -4,4 +4,4 @@ Fixed uploads overwriting each other.
 
 Added Icon cover image that gets auto created.
 
-Added random 3 of the day
+Added random 3 of the day.
