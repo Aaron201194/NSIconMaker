@@ -1,3 +1,3 @@
-V1.0
+V1
 
 Base release with normal icon editor and normal vault with few filters and online capabilities.
