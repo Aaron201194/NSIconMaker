@@ -275,15 +275,43 @@
       const results = await Promise.all(noteFiles.map(async file => {
         const url = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file.path
           .split('/').map(encodeURIComponent).join('/')}`;
-        try {
-          const response = await fetch(url);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return { file, content: await response.text() };
-        } catch (error) {
-          console.error(`Could not load patch note ${file.path}:`, error);
-          return { file, content: 'This patch note could not be loaded.' };
+        const commitsUrl = `https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(file.path)}&per_page=1`;
+
+        // Git tree entries do not contain modification dates, so use the
+        // latest commit that changed this specific notes file.
+        const [contentResult, dateResult] = await Promise.allSettled([
+          fetch(url).then(async response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.text();
+          }),
+          fetch(commitsUrl).then(async response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const commits = await response.json();
+            const date = commits?.[0]?.commit?.committer?.date || commits?.[0]?.commit?.author?.date;
+            return date ? new Date(date).getTime() : 0;
+          })
+        ]);
+
+        if (contentResult.status === 'rejected') {
+          console.error(`Could not load patch note ${file.path}:`, contentResult.reason);
         }
+        if (dateResult.status === 'rejected') {
+          console.error(`Could not get update date for ${file.path}:`, dateResult.reason);
+        }
+
+        return {
+          file,
+          content: contentResult.status === 'fulfilled' ? contentResult.value : 'This patch note could not be loaded.',
+          lastUpdated: dateResult.status === 'fulfilled' ? dateResult.value : 0
+        };
       }));
+
+      // Most recently updated note first; use filename as a stable fallback
+      // when GitHub does not return a date for one of the files.
+      results.sort((a, b) =>
+        b.lastUpdated - a.lastUpdated ||
+        a.file.path.localeCompare(b.file.path, undefined, { numeric: true, sensitivity: 'base' })
+      );
 
       results.forEach(({ file, content }) => {
         const article = document.createElement('article');
